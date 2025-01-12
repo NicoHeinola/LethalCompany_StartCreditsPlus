@@ -1,26 +1,42 @@
 ﻿using BepInEx;
+using BepInEx.Logging;
 using HarmonyLib;
+using StartCreditsPlus.Patches.StartCredits;
 
 namespace StartCreditsPlus;
 
 [BepInPlugin(modGUID, modName, modVersion)]
 public class StartCreditsPlusPlugin : BaseUnityPlugin
 {
-    private const string modGUID = "Pizza.StartCreditsPlus";
+    public const string modGUID = "pizzagamer777.StartCreditsPlus";
     private const string modName = "Start Credits Plus";
     private const string modVersion = "1.0.0";
 
     private readonly Harmony harmony = new Harmony(modGUID);
 
-    private static StartCreditsPlusPlugin instance;
+    private static StartCreditsPlusPlugin _instance;
+    internal static StartCreditsPlusPlugin Instance
+    {
+        get => _instance;
+        set => _instance = value;
+    }
+
+    internal static ManualLogSource logger;
+
+    internal static ConfigManager configManager;
 
     void Awake()
     {
-        if (instance == null)
+        if (Instance == null)
         {
-            instance = this;
+            Instance = this;
         }
 
+        StartCreditsPlusPlugin.logger = BepInEx.Logging.Logger.CreateLogSource(modGUID);
+
+        StartCreditsPlusPlugin.configManager = new ConfigManager();
+
         harmony.PatchAll(typeof(StartCreditsPlusPlugin));
+        StartCredits.patch(harmony);
     }
 }
