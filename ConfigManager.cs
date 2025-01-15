@@ -17,7 +17,10 @@ internal class ConfigManager
     internal ConfigEntry<int> minPlayersForDynamicCredits;
     internal ConfigEntry<int> maxPlayersForDynamicCredits;
 
+    internal ConfigEntry<bool> resetOnFirstDayUponReHost;
+
     // Strings to define sections and keys
+    private const string generalSection = "General";
     private const string staticStartCreditsSection = "Static Start Credits";
     private const string dynamicStartCreditsSection = "Dynamic Start Credits";
     private const string randomStartCreditsSection = "Random Start Credits";
@@ -29,6 +32,7 @@ internal class ConfigManager
     private const string maxDynamicCreditPlayersKey = "Max Players";
     private const string minRandomCreditsKey = "Min Additional Start Credits";
     private const string maxRandomCreditsKey = "Max Additional Start Credits";
+    private const string resetOnFirstDayUponReHostKey = "Reset on First Day Upon Re-Host";
 
     // Description variables
     private readonly string staticStartCreditsEnabledDescription = "If true, \"Static Start Credits\" is applied. Turn this off if you want some other mod to manage start credits.";
@@ -49,20 +53,25 @@ internal class ConfigManager
 
     private readonly string maxRandomCreditsDescription = "Maximum amount of credits the crew starts with.\n\nOnly applies to random credits.";
 
+    private readonly string resetOnFirstDayUponReHostDescription = "When you create a lobby (or get fired), you can buy items and then save and exit. When you re-host, the bought items are not saved but you have still lost the credits. This is a \"fix\" for that.\n\nIf this is enabled, you will get your starting credits back if you re-host the game on your first day (day 0).\n\nThis is disabled by default because some mods still save purchases on day 0 so this setting could be \"abused\" in that sense.";
     public ConfigManager()
     {
         StartCreditsPlusPlugin.logger.LogDebug("Loading config...");
 
         ConfigFile config = StartCreditsPlusPlugin.Instance.Config;
 
+        resetOnFirstDayUponReHost = config.Bind(generalSection, resetOnFirstDayUponReHostKey, false, resetOnFirstDayUponReHostDescription);
+
         // Static start credits
         enableStartingCredits = config.Bind(staticStartCreditsSection, enabledKey, true, staticStartCreditsEnabledDescription);
         startingCredits = config.Bind(staticStartCreditsSection, startCreditsKey, 60, staticStartCreditsAmountDescription);
 
+        // Random start credits
         enableRandomStartCredits = config.Bind(randomStartCreditsSection, enabledKey, false, randomCreditsEnabledDescription);
         minRandomStartCredits = config.Bind(randomStartCreditsSection, minRandomCreditsKey, -60, minRandomCreditsDescription);
         maxRandomStartCredits = config.Bind(randomStartCreditsSection, maxRandomCreditsKey, 60, maxRandomCreditsDescription);
 
+        // Dynamic start credits
         enableDynamicStartCredits = config.Bind(dynamicStartCreditsSection, enabledKey, true, dynamicStartCreditsEnabledDescription);
         dynamicStartCreditIncreasePerPlayer = config.Bind(dynamicStartCreditsSection, startCreditIncreasePerPlayerKey, 15, dynamicStartCreditIncreasePerPlayerDescription);
         minPlayersForDynamicCredits = config.Bind(dynamicStartCreditsSection, minDynamicCreditPlayersKey, 0, minPlayersForDynamicCreditsDescription);
@@ -80,7 +89,9 @@ internal class ConfigManager
         StartCreditsPlusPlugin.logger.LogDebug($"Reloading a config value... [Section: {args.ChangedSetting.Definition.Section}, Value: {args.ChangedSetting.BoxedValue}]");
 
         if (args == null || args.ChangedSetting == null)
+        {
             return;
+        }
 
         // Dynamically update the values when settings change
         if (args.ChangedSetting.Definition.Section == staticStartCreditsSection)
@@ -125,6 +136,15 @@ internal class ConfigManager
                     break;
                 case maxRandomCreditsKey:
                     maxRandomStartCredits.Value = (int)args.ChangedSetting.BoxedValue;
+                    break;
+            }
+        }
+        else if (args.ChangedSetting.Definition.Section == generalSection)
+        {
+            switch (args.ChangedSetting.Definition.Key)
+            {
+                case resetOnFirstDayUponReHostKey:
+                    resetOnFirstDayUponReHost.Value = (bool)args.ChangedSetting.BoxedValue;
                     break;
             }
 

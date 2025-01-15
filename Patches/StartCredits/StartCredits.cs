@@ -24,21 +24,44 @@ internal class StartCredits
         }
     }
 
+    private static bool appliedStaticCredits = false;
+    private static bool appliedRandomCredits = false;
+    private static int dynamicCreditsPlayerAmount = 0;
+
     internal static void patch(Harmony harmony)
     {
         harmony.PatchAll(typeof(TerminalPatch));
         harmony.PatchAll(typeof(StartOfRoundPatch));
     }
 
+    public static void loadSaveFileConfigurations()
+    {
+        if (StartCreditsPlusPlugin.configManager.resetOnFirstDayUponReHost.Value)
+        {
+            reset();
+            return;
+        }
+
+        string saveKey = $"{StartCreditsPlusPlugin.modGUID}.dynamicCreditsPlayerAmount";
+        dynamicCreditsPlayerAmount = ES3.Load<int>(saveKey, GameNetworkManager.Instance.currentSaveFileName, 0);
+
+        saveKey = $"{StartCreditsPlusPlugin.modGUID}.appliedStaticCredits";
+        appliedStaticCredits = ES3.Load<bool>(saveKey, GameNetworkManager.Instance.currentSaveFileName, false);
+
+        saveKey = $"{StartCreditsPlusPlugin.modGUID}.appliedRandomCredits";
+        bool hasAppliedCredits = ES3.Load<bool>(saveKey, GameNetworkManager.Instance.currentSaveFileName, false);
+    }
+
     private static int getAppliedDynamicCreditPlayerAmount()
     {
-        string saveKey = $"{StartCreditsPlusPlugin.modGUID}.dynamicCreditsPlayerAmount";
-        int appliedDynamicCreditPlayerAmount = ES3.Load<int>(saveKey, GameNetworkManager.Instance.currentSaveFileName, 0);
-        return appliedDynamicCreditPlayerAmount;
+        return dynamicCreditsPlayerAmount;
     }
 
     private static bool canModifyStartCredits()
     {
+        // You need to be a host to modify the credits
+        if (!GameNetworkManager.Instance.isHostingGame) return false;
+
         // If not the very first day.
         if (StartOfRound.Instance.gameStats.daysSpent != 0)
         {
@@ -52,9 +75,6 @@ internal class StartCredits
             return false;
         };
 
-        // You need to be a host to modify the credits
-        if (!GameNetworkManager.Instance.isHostingGame) return false;
-
         return true;
     }
 
@@ -65,10 +85,8 @@ internal class StartCredits
             return false;
         }
 
-        string saveKey = $"{StartCreditsPlusPlugin.modGUID}.appliedStaticCredits";
-        bool hasAppliedCredits = ES3.Load<bool>(saveKey, GameNetworkManager.Instance.currentSaveFileName, false);
 
-        return !hasAppliedCredits;
+        return !appliedStaticCredits;
     }
     private static bool canApplyRandomCredits()
     {
@@ -77,10 +95,7 @@ internal class StartCredits
             return false;
         }
 
-        string saveKey = $"{StartCreditsPlusPlugin.modGUID}.appliedRandomCredits";
-        bool hasAppliedCredits = ES3.Load<bool>(saveKey, GameNetworkManager.Instance.currentSaveFileName, false);
-
-        return !hasAppliedCredits;
+        return !appliedRandomCredits;
     }
 
     private static bool canApplyDynamicCredits()
@@ -118,10 +133,55 @@ internal class StartCredits
         // Only hosts can manage credits
         if (!GameNetworkManager.Instance.isHostingGame) return;
 
-        ES3.Save($"{StartCreditsPlusPlugin.modGUID}.appliedStaticCredits", false, GameNetworkManager.Instance.currentSaveFileName);
-        ES3.Save($"{StartCreditsPlusPlugin.modGUID}.appliedRandomCredits", false, GameNetworkManager.Instance.currentSaveFileName);
-        ES3.Save($"{StartCreditsPlusPlugin.modGUID}.dynamicCreditsPlayerAmount", 0, GameNetworkManager.Instance.currentSaveFileName);
-        calculateStartGroupCredits();
+        appliedStaticCredits = false;
+        appliedRandomCredits = false;
+        dynamicCreditsPlayerAmount = 0;
+
+        ES3.Save($"{StartCreditsPlusPlugin.modGUID}.appliedStaticCredits", appliedStaticCredits, GameNetworkManager.Instance.currentSaveFileName);
+        ES3.Save($"{StartCreditsPlusPlugin.modGUID}.appliedRandomCredits", appliedRandomCredits, GameNetworkManager.Instance.currentSaveFileName);
+        ES3.Save($"{StartCreditsPlusPlugin.modGUID}.dynamicCreditsPlayerAmount", dynamicCreditsPlayerAmount, GameNetworkManager.Instance.currentSaveFileName);
+    }
+
+    private static int applyStaticCredits(int creditsToModify)
+    {
+        int startingCredits = StartCreditsPlusPlugin.configManager.startingCredits.Value;
+        creditsToModify = startingCredits;
+
+        appliedStaticCredits = true;
+
+        ES3.Save($"{StartCreditsPlusPlugin.modGUID}.appliedStaticCredits", appliedStaticCredits, GameNetworkManager.Instance.currentSaveFileName);
+
+        return creditsToModify;
+    }
+
+    private static int applyRandomCredits(int creditsToModify)
+    {
+        int minRandomStartCredits = StartCreditsPlusPlugin.configManager.minRandomStartCredits.Value;
+        int maxRandomStartCredits = StartCreditsPlusPlugin.configManager.maxRandomStartCredits.Value;
+
+        int randomCredits = Random.Range(minRandomStartCredits, maxRandomStartCredits);
+
+        creditsToModify += randomCredits;
+
+        appliedRandomCredits = true;
+
+        ES3.Save($"{StartCreditsPlusPlugin.modGUID}.appliedRandomCredits", appliedRandomCredits, GameNetworkManager.Instance.currentSaveFileName);
+
+        return creditsToModify;
+    }
+
+    private static int applyDynamicCredits(int creditsToModify)
+    {
+        int dynamicStartCreditIncreasePerPlayer = StartCreditsPlusPlugin.configManager.dynamicStartCreditIncreasePerPlayer.Value;
+        int appliedDynamicCreditPlayerAmount = getAppliedDynamicCreditPlayerAmount();
+        int playersLeftToApply = GameNetworkManager.Instance.connectedPlayers - appliedDynamicCreditPlayerAmount;
+        creditsToModify += dynamicStartCreditIncreasePerPlayer * playersLeftToApply;
+
+        dynamicCreditsPlayerAmount = appliedDynamicCreditPlayerAmount + playersLeftToApply;
+
+        ES3.Save($"{StartCreditsPlusPlugin.modGUID}.dynamicCreditsPlayerAmount", dynamicCreditsPlayerAmount, GameNetworkManager.Instance.currentSaveFileName);
+
+        return creditsToModify;
     }
 
     internal static void calculateStartGroupCredits()
@@ -135,34 +195,18 @@ internal class StartCredits
 
         if (canApplyStaticCredits())
         {
-            int startingCredits = StartCreditsPlusPlugin.configManager.startingCredits.Value;
-            newGroupCredits = startingCredits;
-
-            ES3.Save($"{StartCreditsPlusPlugin.modGUID}.appliedStaticCredits", true, GameNetworkManager.Instance.currentSaveFileName);
+            newGroupCredits = applyStaticCredits(newGroupCredits);
         }
 
         if (canApplyRandomCredits())
         {
-            int minRandomStartCredits = StartCreditsPlusPlugin.configManager.minRandomStartCredits.Value;
-            int maxRandomStartCredits = StartCreditsPlusPlugin.configManager.maxRandomStartCredits.Value;
-
-            int randomCredits = Random.Range(minRandomStartCredits, maxRandomStartCredits);
-
-            newGroupCredits += randomCredits;
-
-            ES3.Save($"{StartCreditsPlusPlugin.modGUID}.appliedRandomCredits", true, GameNetworkManager.Instance.currentSaveFileName);
+            newGroupCredits = applyRandomCredits(newGroupCredits);
         }
 
 
         if (canApplyDynamicCredits())
         {
-            int dynamicStartCreditIncreasePerPlayer = StartCreditsPlusPlugin.configManager.dynamicStartCreditIncreasePerPlayer.Value;
-            int appliedDynamicCreditPlayerAmount = getAppliedDynamicCreditPlayerAmount();
-            int playersLeftToApply = GameNetworkManager.Instance.connectedPlayers - appliedDynamicCreditPlayerAmount;
-            newGroupCredits += dynamicStartCreditIncreasePerPlayer * playersLeftToApply;
-
-            int newAppliedDynamicCreditPlayerAmount = appliedDynamicCreditPlayerAmount + playersLeftToApply;
-            ES3.Save($"{StartCreditsPlusPlugin.modGUID}.dynamicCreditsPlayerAmount", newAppliedDynamicCreditPlayerAmount, GameNetworkManager.Instance.currentSaveFileName);
+            newGroupCredits = applyDynamicCredits(newGroupCredits);
         }
 
         if (newGroupCredits != Terminal.groupCredits)

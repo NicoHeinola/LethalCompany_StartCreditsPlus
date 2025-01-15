@@ -4,6 +4,13 @@ namespace StartCreditsPlus.Patches.StartCredits;
 [HarmonyPatch(typeof(StartOfRound))]
 internal class StartOfRoundPatch
 {
+    [HarmonyPatch("Start")]
+    [HarmonyPrefix]
+    private static void StartPatch()
+    {
+        StartCredits.loadSaveFileConfigurations();
+    }
+
     [HarmonyPatch("OnClientConnect")]
     [HarmonyPostfix]
     private static void OnClientConnectPatch()
@@ -16,5 +23,6 @@ internal class StartOfRoundPatch
     private static void ResetShipPatch()
     {
         StartCredits.reset();
+        StartCredits.calculateStartGroupCredits();
     }
 }
