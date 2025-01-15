@@ -11,6 +11,9 @@ I made this mod because all the other mods I tried either didn't have all of the
 ## Features
 All of these can be toggled on/off.
 
+### Reset on First Day Upon Re-Host
+Simply resets start credits when you re-host a lobby and 0 days have passed. If you buy Items in vanilla Lethal Company and then re-host the lobby, you lose the credits and the bought items aren't saved. This aims to fix that.
+
 ### Static start credits
 Change the default amount of start credits.
 

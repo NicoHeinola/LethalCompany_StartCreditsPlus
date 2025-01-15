@@ -1,6 +1,6 @@
 {
   "name": "StartCreditsPlus",
-  "version_number": "1.0.0",
+  "version_number": "1.1.1",
   "website_url": "",
   "description": "Customize starting credits with ease! Ever wanted to have 99999 credits when you start a game? No problem. Ever wanted to get credits based on player count? No problem. Or maybe you want to start with a random amount of credits? No problem.",
   "dependencies": [

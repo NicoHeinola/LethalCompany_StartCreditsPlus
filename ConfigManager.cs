@@ -37,7 +37,7 @@ internal class ConfigManager
     // Description variables
     private readonly string staticStartCreditsEnabledDescription = "If true, \"Static Start Credits\" is applied. Turn this off if you want some other mod to manage start credits.";
 
-    private readonly string staticStartCreditsAmountDescription = "Modifies how many credits the crew starts with.\n\nEx. \"1000\" means that you have 1000 credits when you start a new run.\n\nDynamic Start Credits are applied on top of this.\n\nEx. if this setting is 60, Dynamic Start Credits is 15 and there are 3 players, then you would start with 60 + 15 * 3 = 105 credits. \n\nBy default you start with 60 credits in unmodded Lethal Company.";
+    private readonly string staticStartCreditsAmountDescription = "Modifies how many credits the crew starts with.\n\nEx. \"1000\" means that you have 1000 credits when you start a new run.\n\nDynamic Start Credits are applied on top of this.\n\nEx. if this setting is 60, Dynamic Start Credits is 15 and there are 3 players, then you would start with 60 + 15 * 3 = 105 credits. \n\nBy default you start with 60 credits in vanilla Lethal Company.";
 
     private readonly string dynamicStartCreditsEnabledDescription = "If true, \"Dynamic Start Credits\" is applied. Turn this off if you want some other mod to manage start credits.";
 
