@@ -6,7 +6,7 @@ internal class StartCredits
 {
     private static Terminal _terminal;
 
-    private static Terminal Terminal
+    public static Terminal Terminal
     {
         get
         {
@@ -57,13 +57,19 @@ internal class StartCredits
         return dynamicCreditsPlayerAmount;
     }
 
-    private static bool canModifyStartCredits()
+    public static bool canModifyStartCredits()
     {
         // You need to be a host to modify the credits
         if (!GameNetworkManager.Instance.isHostingGame) return false;
 
         // If not the very first day.
         if (StartOfRound.Instance.gameStats.daysSpent != 0)
+        {
+            return false;
+        }
+
+        // If players are going to land on a planet
+        if (!StartOfRound.Instance.inShipPhase)
         {
             return false;
         }

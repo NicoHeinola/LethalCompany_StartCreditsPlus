@@ -23,3 +23,9 @@ You can also set minimum and maximum player amounts.
 
 ### Random start credits
 You can randomize the amount of start credits your crew gets. This ADDS the random amount to the start credits and doesn't replace it. This way it works with other features in this mod and maybe even with other mods.
+
+### Terminal commands
+Prefix can be edited from config. Default is `startcreditsplus`.
+
+- `startcreditsplus help` - Shows help.
+- `startcreditsplus reload` - Resets start credits and resets purchased items that are on route.

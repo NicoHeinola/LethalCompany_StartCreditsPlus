@@ -19,11 +19,17 @@ internal class ConfigManager
 
     internal ConfigEntry<bool> resetOnFirstDayUponReHost;
 
+    internal ConfigEntry<bool> terminalCommandsEnabled;
+    internal ConfigEntry<string> terminalCommandPrefix;
+    internal ConfigEntry<string> terminalCommandHelp;
+    internal ConfigEntry<string> terminalCommandReload;
+
     // Strings to define sections and keys
     private const string generalSection = "General";
     private const string staticStartCreditsSection = "Static Start Credits";
     private const string dynamicStartCreditsSection = "Dynamic Start Credits";
     private const string randomStartCreditsSection = "Random Start Credits";
+    private const string terminalCommandsSection = "Terminal Commands";
 
     private const string enabledKey = "Enabled";
     private const string startCreditsKey = "Start Credits";
@@ -33,6 +39,9 @@ internal class ConfigManager
     private const string minRandomCreditsKey = "Min Additional Start Credits";
     private const string maxRandomCreditsKey = "Max Additional Start Credits";
     private const string resetOnFirstDayUponReHostKey = "Reset on First Day Upon Re-Host";
+    private const string terminalCommandPrefixKey = "Prefix For All Commands";
+    private const string terminalCommandHelpKey = "Help Command Keyword";
+    private const string terminalCommandReloadKey = "Reload Command Keyword";
 
     // Description variables
     private readonly string staticStartCreditsEnabledDescription = "If true, \"Static Start Credits\" is applied. Turn this off if you want some other mod to manage start credits.";
@@ -47,13 +56,22 @@ internal class ConfigManager
 
     private readonly string maxPlayersForDynamicCreditsDescription = "How many players can be in the lobby before we stop applying the \"Start Credit Increase Per Player\" increase.\n\nEx. 4 would mean that the bonus is applied 4 times, host included. If a 5th person joined, host included, then the bonus would NOT be applied.\n\n-1 Means there is no maximum cap.";
 
-    private readonly string randomCreditsEnabledDescription = "If true, the crew will get a random amount of credits.\n\nThis will be applied IN ADDITION to any other credits like \"Static Start Credits\".\n\nIf you just want any random amount, you should set \"Static Start Credits\" to 0.\n\nEx. if \"Static Start Credits\" is 200 and this is in range of -100 to 150, then the starting credits could be from 100 (200 - 100) to 350 (200 + 150).";
+    private readonly string randomCreditsEnabledDescription = "If true, the crew will get a random amount of credits.\n\nThis will be applied IN ADDITION to any other credits like \"Static Start Credits\".\n\nIf you just want any random amount, you should set \"Static Start Credits\" to 0.\n\nEx. if \"Static Start Credits\" is 200 and this is in range of -100 to 150, then the start credits could be from 100 (200 - 100) to 350 (200 + 150).";
 
     private readonly string minRandomCreditsDescription = "Minimum amount of credits the crew starts with.\n\nOnly applies to random credits.";
 
     private readonly string maxRandomCreditsDescription = "Maximum amount of credits the crew starts with.\n\nOnly applies to random credits.";
 
-    private readonly string resetOnFirstDayUponReHostDescription = "When you create a lobby (or get fired), you can buy items and then save and exit. When you re-host, the bought items are not saved but you have still lost the credits. This is a \"fix\" for that.\n\nIf this is enabled, you will get your starting credits back if you re-host the game on your first day (day 0).\n\nThis is disabled by default because some mods still save purchases on day 0 so this setting could be \"abused\" in that sense.";
+    private readonly string resetOnFirstDayUponReHostDescription = "When you create a lobby (or get fired), you can buy items and then save and exit. When you re-host, the bought items are not saved but you have still lost the credits. This is a \"fix\" for that.\n\nIf this is enabled, you will get your start credits back if you re-host the game on your first day (day 0).\n\nThis is disabled by default because some mods still save purchases on day 0 so this setting could be \"abused\" in that sense.";
+
+    private readonly string terminalCommandsEnabledDescription = "If any of the terminal commands from this mod are enabled. \n\nCurrent terminal commands are:\n\"reload\"\n\"help\"\n\nSpaces are NOT allowed.\n\nYou can disable individual commands by leaving them empty. It is not recommended but you can leave the prefix empty and still run commands.";
+
+    private readonly string terminalCommandPrefixDescription = "Every terminal command from this mod needs to have this keyword before them. Case doesn't matter.\n\nEx. if this setting is StartCreditsPlus, you can reload credits by typing \"STARTcreditsPLUS REload\" or \"StartCreditsPlus reload\", etc.";
+
+    private readonly string terminalCommandHelpDescription = "Shows all available terminal commands and their descriptions.\n\nThis is useful if you forget what a command does or if you want to see all available commands.";
+
+    private readonly string terminalCommandReloadDescription = "Resets start credits. Removes every bought item. Only works on day 0.\n\nThis is useful is some other mod overwrites some aspect of this mod. This is a sort of manual activation of this mod's features.";
+
     public ConfigManager()
     {
         StartCreditsPlusPlugin.logger.LogDebug("Loading config...");
@@ -76,6 +94,12 @@ internal class ConfigManager
         dynamicStartCreditIncreasePerPlayer = config.Bind(dynamicStartCreditsSection, startCreditIncreasePerPlayerKey, 15, dynamicStartCreditIncreasePerPlayerDescription);
         minPlayersForDynamicCredits = config.Bind(dynamicStartCreditsSection, minDynamicCreditPlayersKey, 0, minPlayersForDynamicCreditsDescription);
         maxPlayersForDynamicCredits = config.Bind(dynamicStartCreditsSection, maxDynamicCreditPlayersKey, -1, maxPlayersForDynamicCreditsDescription);
+
+        // Terminal commands
+        terminalCommandsEnabled = config.Bind(terminalCommandsSection, enabledKey, true, terminalCommandsEnabledDescription);
+        terminalCommandPrefix = config.Bind(terminalCommandsSection, terminalCommandPrefixKey, "StartCreditsPlus", terminalCommandPrefixDescription);
+        terminalCommandHelp = config.Bind(terminalCommandsSection, terminalCommandHelpKey, "help", terminalCommandHelpDescription);
+        terminalCommandReload = config.Bind(terminalCommandsSection, terminalCommandReloadKey, "reload", terminalCommandReloadDescription);
 
         // Subscribe to the SettingChanged event
         StartCreditsPlusPlugin.Instance.Config.SettingChanged += OnSettingChanged;
@@ -148,6 +172,24 @@ internal class ConfigManager
                     break;
             }
 
+        }
+        else if (args.ChangedSetting.Definition.Section == terminalCommandsSection)
+        {
+            switch (args.ChangedSetting.Definition.Key)
+            {
+                case enabledKey:
+                    terminalCommandsEnabled.Value = (bool)args.ChangedSetting.BoxedValue;
+                    break;
+                case terminalCommandPrefixKey:
+                    terminalCommandPrefix.Value = (string)args.ChangedSetting.BoxedValue;
+                    break;
+                case terminalCommandHelpKey:
+                    terminalCommandHelp.Value = (string)args.ChangedSetting.BoxedValue;
+                    break;
+                case terminalCommandReloadKey:
+                    terminalCommandReload.Value = (string)args.ChangedSetting.BoxedValue;
+                    break;
+            }
         }
 
         StartCreditsPlusPlugin.logger.LogDebug("Reloading complete!");

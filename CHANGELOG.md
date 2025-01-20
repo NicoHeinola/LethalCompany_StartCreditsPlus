@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.0] 2025-01-20
+
+### Added
+- New terminal commands! (help, reload)
+
+### Fixed
+- If someone (somehow?) was able to join during day 0 when ship had already landed, it would still add credits if "Dynamic Start Credits" was enabled. This is now fixed.
+
 ## [1.1.1] 2025-01-15
 
 ### Changed
