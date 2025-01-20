@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.1] 2025-01-20
+
+### Removed
+- Testing logs that I forgot to remove from `1.2.0`.
+
+### Changed
+- `1.2` -> `1.2.0` in changelog.
+
 ## [1.2.0] 2025-01-20
 
 ### Added

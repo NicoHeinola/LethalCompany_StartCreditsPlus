@@ -14,18 +14,15 @@ internal class TerminalCommandManager
 
     public static void handleTerminalCommand(string[] typedWords)
     {
-        StartCreditsPlusPlugin.logger.LogWarning("1...");
         if (typedWords.Length == 0)
         {
             return;
         };
-        StartCreditsPlusPlugin.logger.LogWarning("2...");
 
         if (!canRunTerminalCommands())
         {
             return;
         }
-        StartCreditsPlusPlugin.logger.LogWarning("3...");
 
         string prefix = StartCreditsPlusPlugin.configManager.terminalCommandPrefix.Value.ToLower();
         string typedWord1 = typedWords[0].ToLower();
@@ -34,8 +31,6 @@ internal class TerminalCommandManager
 
         if (typedWords.Length < 2)
         {
-            StartCreditsPlusPlugin.logger.LogWarning($"5...{typedWord1}");
-
             if (typedWord1 == "help")
             {
                 handleVanillaHelpCommand();
@@ -43,7 +38,6 @@ internal class TerminalCommandManager
 
             return;
         }
-        StartCreditsPlusPlugin.logger.LogWarning("4...");
 
         if (prefix != "" && typedWord1 != prefix)
         {
@@ -92,6 +86,8 @@ internal class TerminalCommandManager
 
     private static void handleHelpCommand()
     {
+        StartCreditsPlusPlugin.logger.LogDebug("\"help\" command was typed...");
+
         string prefix = StartCreditsPlusPlugin.configManager.terminalCommandPrefix.Value;
         string helpCommandKey = StartCreditsPlusPlugin.configManager.terminalCommandHelp.Value;
         string reloadCommandKey = StartCreditsPlusPlugin.configManager.terminalCommandReload.Value;
