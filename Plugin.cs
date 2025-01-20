@@ -10,7 +10,7 @@ public class StartCreditsPlusPlugin : BaseUnityPlugin
 {
     public const string modGUID = "pizzagamer777.StartCreditsPlus";
     private const string modName = "Start Credits Plus";
-    private const string modVersion = "1.2.1";
+    private const string modVersion = "1.2.2";
 
     private readonly Harmony harmony = new Harmony(modGUID);
 

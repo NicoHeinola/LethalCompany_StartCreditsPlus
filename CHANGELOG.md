@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.2] 2025-01-20
+
+### Fixed
+- Random start credits could be triggered more than once, if reloading a save on day 0.
+
 ## [1.2.1] 2025-01-20
 
 ### Removed

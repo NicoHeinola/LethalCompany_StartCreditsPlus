@@ -49,7 +49,7 @@ internal class StartCredits
         appliedStaticCredits = ES3.Load<bool>(saveKey, GameNetworkManager.Instance.currentSaveFileName, false);
 
         saveKey = $"{StartCreditsPlusPlugin.modGUID}.appliedRandomCredits";
-        bool hasAppliedCredits = ES3.Load<bool>(saveKey, GameNetworkManager.Instance.currentSaveFileName, false);
+        appliedRandomCredits = ES3.Load<bool>(saveKey, GameNetworkManager.Instance.currentSaveFileName, false);
     }
 
     private static int getAppliedDynamicCreditPlayerAmount()
