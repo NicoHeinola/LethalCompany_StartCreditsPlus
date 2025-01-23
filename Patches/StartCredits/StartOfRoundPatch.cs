@@ -25,4 +25,11 @@ internal class StartOfRoundPatch
         StartCredits.reset();
         StartCredits.calculateStartGroupCredits();
     }
+
+    [HarmonyPatch("StartGame")]
+    [HarmonyPrefix]
+    private static void StartGamePatch()
+    {
+        StartCredits.calculateStartGroupCredits();
+    }
 }

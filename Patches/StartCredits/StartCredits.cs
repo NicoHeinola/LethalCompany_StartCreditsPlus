@@ -24,9 +24,34 @@ internal class StartCredits
         }
     }
 
+    private static StartMatchLever _startMatchLever;
+
+    public static StartMatchLever StartMatchLever
+    {
+        get
+        {
+            if (_startMatchLever == null)
+            {
+                _startMatchLever = GameObject.FindObjectOfType<StartMatchLever>();
+            }
+
+            return _startMatchLever;
+        }
+
+        set
+        {
+            _startMatchLever = value;
+        }
+    }
+
     private static bool appliedStaticCredits = false;
     private static bool appliedRandomCredits = false;
     private static int dynamicCreditsPlayerAmount = 0;
+
+    // Used when we want to allocate credits after the ship has landed.
+    // We use this to store them and reapply them later.
+    // This is to support other mods that modify start credits.
+    private static int temporaryStartCreditAmount = -1;
 
     internal static void patch(Harmony harmony)
     {
@@ -50,6 +75,9 @@ internal class StartCredits
 
         saveKey = $"{StartCreditsPlusPlugin.modGUID}.appliedRandomCredits";
         appliedRandomCredits = ES3.Load<bool>(saveKey, GameNetworkManager.Instance.currentSaveFileName, false);
+
+        saveKey = $"{StartCreditsPlusPlugin.modGUID}.temporaryStartCreditAmount";
+        temporaryStartCreditAmount = ES3.Load<int>(saveKey, GameNetworkManager.Instance.currentSaveFileName, -1);
     }
 
     private static int getAppliedDynamicCreditPlayerAmount()
@@ -68,8 +96,16 @@ internal class StartCredits
             return false;
         }
 
+        bool allocateAfterLanding = StartCreditsPlusPlugin.configManager.allocateStartCreditsAfterLanding.Value;
+        bool shipHasLanded = StartMatchLever.leverHasBeenPulled;
+        if (allocateAfterLanding && !shipHasLanded)
+        {
+            StartCreditsPlusPlugin.logger.LogDebug("Ship hasn't landed yet. Can't modify start credits.");
+            return false;
+        }
+
         // If players are going to land on a planet
-        if (!StartOfRound.Instance.inShipPhase)
+        if (!StartOfRound.Instance.inShipPhase && !allocateAfterLanding)
         {
             return false;
         }
@@ -142,10 +178,12 @@ internal class StartCredits
         appliedStaticCredits = false;
         appliedRandomCredits = false;
         dynamicCreditsPlayerAmount = 0;
+        temporaryStartCreditAmount = -1;
 
         ES3.Save($"{StartCreditsPlusPlugin.modGUID}.appliedStaticCredits", appliedStaticCredits, GameNetworkManager.Instance.currentSaveFileName);
         ES3.Save($"{StartCreditsPlusPlugin.modGUID}.appliedRandomCredits", appliedRandomCredits, GameNetworkManager.Instance.currentSaveFileName);
         ES3.Save($"{StartCreditsPlusPlugin.modGUID}.dynamicCreditsPlayerAmount", dynamicCreditsPlayerAmount, GameNetworkManager.Instance.currentSaveFileName);
+        ES3.Save($"{StartCreditsPlusPlugin.modGUID}.temporaryStartCreditAmount", temporaryStartCreditAmount, GameNetworkManager.Instance.currentSaveFileName);
     }
 
     private static int applyStaticCredits(int _)
@@ -253,10 +291,26 @@ internal class StartCredits
     {
         if (!canModifyStartCredits())
         {
+            StartCreditsPlusPlugin.logger.LogDebug("Can't modify start credits. Skipping...");
+
+            if (temporaryStartCreditAmount == -1)
+            {
+                temporaryStartCreditAmount = Terminal.groupCredits;
+                Terminal.groupCredits = 0;
+                ES3.Save($"{StartCreditsPlusPlugin.modGUID}.temporaryStartCreditAmount", temporaryStartCreditAmount, GameNetworkManager.Instance.currentSaveFileName);
+
+                StartCreditsPlusPlugin.logger.LogDebug($"Stored temporary start credit amount: {temporaryStartCreditAmount}");
+            }
+
             return;
         }
 
-        int newGroupCredits = Terminal.groupCredits;
+        int newGroupCredits = Terminal.groupCredits + Mathf.Max(0, temporaryStartCreditAmount);
+        temporaryStartCreditAmount = 0;
+
+        StartCreditsPlusPlugin.logger.LogDebug($"Calculating start group credits... Current credits: {Terminal.groupCredits}");
+
+        ES3.Save($"{StartCreditsPlusPlugin.modGUID}.temporaryStartCreditAmount", temporaryStartCreditAmount, GameNetworkManager.Instance.currentSaveFileName);
 
         if (canApplyStaticCredits())
         {

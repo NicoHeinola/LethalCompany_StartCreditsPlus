@@ -30,6 +30,8 @@ internal class ConfigManager
     internal ConfigEntry<string> terminalCommandHelp;
     internal ConfigEntry<string> terminalCommandReload;
 
+    internal ConfigEntry<bool> allocateStartCreditsAfterLanding;
+
     // Strings to define sections and keys
     private const string generalSection = "General";
     private const string staticStartCreditsSection = "Static Start Credits";
@@ -39,6 +41,8 @@ internal class ConfigManager
     private const string terminalCommandsSection = "Terminal Commands";
 
     private const string enabledKey = "Enabled";
+    private const string resetOnFirstDayUponReHostKey = "Reset on First Day Upon Re-Host";
+    private const string allocateStartCreditsAfterLandingKey = "Allocate Start Credits After Landing";
     private const string startCreditsKey = "Start Credits";
     private const string startCreditIncreasePerPlayerKey = "Start Credit Increase Per Player";
     private const string minDynamicCreditPlayersKey = "Min Players";
@@ -49,7 +53,6 @@ internal class ConfigManager
     private const string dynamicStartCreditMaxIncreaseKey = "Max Increase";
     private const string dynamicStartCreditAdditiveChangeKey = "Additive Change";
     private const string dynamicStartCreditMultiplicativeChangeKey = "Multiplicative Change";
-    private const string resetOnFirstDayUponReHostKey = "Reset on First Day Upon Re-Host";
     private const string terminalCommandPrefixKey = "Prefix For All Commands";
     private const string terminalCommandHelpKey = "Help Command Keyword";
     private const string terminalCommandReloadKey = "Reload Command Keyword";
@@ -91,6 +94,8 @@ internal class ConfigManager
 
     private readonly string terminalCommandReloadDescription = "Resets start credits. Removes every bought item. Only works on day 0.\n\nThis is useful is some other mod overwrites some aspect of this mod. This is a sort of manual activation of this mod's features.";
 
+    private readonly string allocateStartCreditsAfterLandingDescription = "If true, starting credits will be allocated after landing instead of at the start.\n\nStart credits will be 0 before you land.";
+
     public ConfigManager()
     {
         StartCreditsPlusPlugin.logger.LogDebug("Loading config...");
@@ -98,6 +103,7 @@ internal class ConfigManager
         ConfigFile config = StartCreditsPlusPlugin.Instance.Config;
 
         resetOnFirstDayUponReHost = config.Bind(generalSection, resetOnFirstDayUponReHostKey, false, resetOnFirstDayUponReHostDescription);
+        allocateStartCreditsAfterLanding = config.Bind(generalSection, allocateStartCreditsAfterLandingKey, false, allocateStartCreditsAfterLandingDescription);
 
         // Static start credits
         enableStartingCredits = config.Bind(staticStartCreditsSection, enabledKey, true, staticStartCreditsEnabledDescription);
@@ -206,6 +212,9 @@ internal class ConfigManager
             {
                 case resetOnFirstDayUponReHostKey:
                     resetOnFirstDayUponReHost.Value = (bool)args.ChangedSetting.BoxedValue;
+                    break;
+                case allocateStartCreditsAfterLandingKey:
+                    allocateStartCreditsAfterLanding.Value = (bool)args.ChangedSetting.BoxedValue;
                     break;
             }
 

@@ -3,7 +3,8 @@
 ## [1.3.0] 2025-01-23
 
 ### Added
-- Changing Dynamic Start Credits. Now the amount itself can decrease/increase incrementally based on player count.
+- [New Section in settings!]: `Changing Dynamic Start Credits`. Now the amount itself can decrease/increase incrementally based on player count.
+- [New Setting]: `Allocate Start Credits After Landing`. If enabled, you get start credits only after you land on day instead of instantly.
 
 ### Fixed
 - When credits were reset using Terminal, it would not go to the vanilla amount (60) but 0 instead.
