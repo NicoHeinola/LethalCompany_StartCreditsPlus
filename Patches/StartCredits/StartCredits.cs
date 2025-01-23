@@ -79,7 +79,8 @@ internal class StartCredits
         {
             StartCreditsPlusPlugin.logger.LogWarning("Terminal not found! Can't modify start credits.");
             return false;
-        };
+        }
+
 
         return true;
     }
@@ -111,25 +112,24 @@ internal class StartCredits
             return false;
         }
 
-        // If applied already to the current players
-        if (getAppliedDynamicCreditPlayerAmount() >= GameNetworkManager.Instance.connectedPlayers)
-        {
-            return false;
-        }
-
-        // If too little players in the lobby
+        // ----- If applied already to the current players
         int minPlayers = StartCreditsPlusPlugin.configManager.minPlayersForDynamicCredits.Value;
-        if (GameNetworkManager.Instance.connectedPlayers <= minPlayers)
+        int maxPlayers = StartCreditsPlusPlugin.configManager.maxPlayersForDynamicCredits.Value;
+        bool maxPlayersEnabled = maxPlayers > -1;
+
+        int playersToApplyTo = Mathf.Max(0, GameNetworkManager.Instance.connectedPlayers - minPlayers);
+
+        // If max player limit is enabled
+        if (maxPlayersEnabled)
         {
-            return false;
+            playersToApplyTo = Mathf.Min(maxPlayers - minPlayers, playersToApplyTo);
         }
 
-        // If too many players in the lobby
-        int maxPlayers = StartCreditsPlusPlugin.configManager.maxPlayersForDynamicCredits.Value;
-        if (GameNetworkManager.Instance.connectedPlayers > maxPlayers && maxPlayers > -1)
+        if (getAppliedDynamicCreditPlayerAmount() >= playersToApplyTo)
         {
             return false;
         }
+        // -----
 
         return true;
     }
@@ -148,10 +148,10 @@ internal class StartCredits
         ES3.Save($"{StartCreditsPlusPlugin.modGUID}.dynamicCreditsPlayerAmount", dynamicCreditsPlayerAmount, GameNetworkManager.Instance.currentSaveFileName);
     }
 
-    private static int applyStaticCredits(int creditsToModify)
+    private static int applyStaticCredits(int _)
     {
         int startingCredits = StartCreditsPlusPlugin.configManager.startingCredits.Value;
-        creditsToModify = startingCredits;
+        int creditsToModify = startingCredits;
 
         appliedStaticCredits = true;
 
@@ -176,14 +176,73 @@ internal class StartCredits
         return creditsToModify;
     }
 
+    private static float getNextDynamicCreditAmount(float currentAmount)
+    {
+        int additiveChange = StartCreditsPlusPlugin.configManager.dynamicStartCreditAdditiveChange.Value;
+        float multiplicativeChange = StartCreditsPlusPlugin.configManager.dynamicStartCreditMultiplicativeChange.Value;
+        float newAmount = (currentAmount + additiveChange) * multiplicativeChange;
+
+        return newAmount;
+    }
+
     private static int applyDynamicCredits(int creditsToModify)
     {
-        int dynamicStartCreditIncreasePerPlayer = StartCreditsPlusPlugin.configManager.dynamicStartCreditIncreasePerPlayer.Value;
-        int appliedDynamicCreditPlayerAmount = getAppliedDynamicCreditPlayerAmount();
-        int playersLeftToApply = GameNetworkManager.Instance.connectedPlayers - appliedDynamicCreditPlayerAmount;
-        creditsToModify += dynamicStartCreditIncreasePerPlayer * playersLeftToApply;
+        int increasePerPlayer = StartCreditsPlusPlugin.configManager.dynamicStartCreditIncreasePerPlayer.Value;
 
-        dynamicCreditsPlayerAmount = appliedDynamicCreditPlayerAmount + playersLeftToApply;
+        int minPlayers = StartCreditsPlusPlugin.configManager.minPlayersForDynamicCredits.Value;
+        int maxPlayers = StartCreditsPlusPlugin.configManager.maxPlayersForDynamicCredits.Value;
+
+        bool maxPlayersEnabled = maxPlayers > -1;
+
+        int playersToApplyTo = Mathf.Max(0, GameNetworkManager.Instance.connectedPlayers - minPlayers);
+
+        // If max player limit is enabled
+        if (maxPlayersEnabled)
+        {
+            playersToApplyTo = Mathf.Min(maxPlayers - minPlayers, playersToApplyTo);
+        }
+
+        int minIncrease = StartCreditsPlusPlugin.configManager.dynamicStartCreditMinIncrease.Value;
+        int maxIncrease = StartCreditsPlusPlugin.configManager.dynamicStartCreditMaxIncrease.Value;
+
+        bool maxIncreaseEnabled = maxIncrease != -1;
+
+        int appliedToPlayersCount = getAppliedDynamicCreditPlayerAmount();
+
+        float nextIncrease = increasePerPlayer;
+
+        StartCreditsPlusPlugin.logger.LogDebug($"Applying dynamic credits to {playersToApplyTo} players. Applied to {appliedToPlayersCount} players.");
+
+        for (int i = 1; i <= playersToApplyTo; i++)
+        {
+            // Calculate base next increase
+            if (i <= appliedToPlayersCount)
+            {
+                nextIncrease = getNextDynamicCreditAmount(nextIncrease);
+                continue;
+            }
+
+            // Apply limits
+            int roundedNextIncrease = Mathf.RoundToInt(nextIncrease);
+
+
+            roundedNextIncrease = Mathf.Max(minIncrease, roundedNextIncrease);
+
+
+            if (maxIncreaseEnabled)
+            {
+                roundedNextIncrease = Mathf.Min(maxIncrease, roundedNextIncrease);
+            }
+
+            // Increase credits
+            creditsToModify += roundedNextIncrease;
+
+            // Increment next increase
+            nextIncrease = getNextDynamicCreditAmount(nextIncrease);
+        }
+
+        // Fixes a situation where user first has maxPlayers off but then turns it on
+        dynamicCreditsPlayerAmount = appliedToPlayersCount + playersToApplyTo;
 
         ES3.Save($"{StartCreditsPlusPlugin.modGUID}.dynamicCreditsPlayerAmount", dynamicCreditsPlayerAmount, GameNetworkManager.Instance.currentSaveFileName);
 

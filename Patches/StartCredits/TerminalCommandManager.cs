@@ -17,7 +17,8 @@ internal class TerminalCommandManager
         if (typedWords.Length == 0)
         {
             return;
-        };
+        }
+
 
         if (!canRunTerminalCommands())
         {
@@ -27,7 +28,7 @@ internal class TerminalCommandManager
         string prefix = StartCreditsPlusPlugin.configManager.terminalCommandPrefix.Value.ToLower();
         string typedWord1 = typedWords[0].ToLower();
 
-        string helpCommandKey = StartCreditsPlusPlugin.configManager.terminalCommandHelp.Value;
+        string helpCommandKey = StartCreditsPlusPlugin.configManager.terminalCommandHelp.Value.ToLower();
 
         if (typedWords.Length < 2)
         {
@@ -45,7 +46,7 @@ internal class TerminalCommandManager
         }
 
         string typedWord2 = typedWords[1].ToLower();
-        string reloadCommandKey = StartCreditsPlusPlugin.configManager.terminalCommandReload.Value;
+        string reloadCommandKey = StartCreditsPlusPlugin.configManager.terminalCommandReload.Value.ToLower();
 
         if (helpCommandKey != "" && typedWord2 == helpCommandKey)
         {
@@ -53,11 +54,34 @@ internal class TerminalCommandManager
             return;
         }
 
-        if (reloadCommandKey != "" && typedWord2.ToLower() == reloadCommandKey.ToLower())
+        if (reloadCommandKey != "" && typedWord2 == reloadCommandKey)
         {
             handleReloadCommand();
             return;
         }
+
+        // Debug commands
+
+        /*if (typedWord2 == "d2")
+        {
+            StartCredits.calculateStartGroupCredits();
+            terminalMessageOverride = $"Applied credit changes!";
+            return;
+        }
+
+        if (typedWord2 == "d1+")
+        {
+            GameNetworkManager.Instance.connectedPlayers += 1;
+            terminalMessageOverride = $"Players in lobby {GameNetworkManager.Instance.connectedPlayers}";
+            return;
+        }
+
+        if (typedWord2 == "d1m")
+        {
+            GameNetworkManager.Instance.connectedPlayers -= 1;
+            terminalMessageOverride = $"Players in lobby {GameNetworkManager.Instance.connectedPlayers}";
+            return;
+        }*/
     }
 
     private static void handleReloadCommand()
@@ -69,11 +93,13 @@ internal class TerminalCommandManager
             terminalMessageOverride = $"You are not allowed to reset start credits!";
 
             return;
-        };
+        }
+
 
         StartCreditsPlusPlugin.logger.LogDebug("Reloading start credits...");
 
-        StartCredits.Terminal.groupCredits = 0;
+        // Vanilla starting credits
+        StartCredits.Terminal.groupCredits = TimeOfDay.Instance.quotaVariables.startingCredits;
         StartCredits.Terminal.ClearBoughtItems();
         StartCredits.Terminal.SyncGroupCreditsServerRpc(StartCredits.Terminal.groupCredits, StartCredits.Terminal.numberOfItemsInDropship);
 
@@ -97,6 +123,8 @@ internal class TerminalCommandManager
 
     public static void handleVanillaHelpCommand()
     {
+        StartCreditsPlusPlugin.logger.LogDebug("Handling vanilla help command...");
+
         string prefix = StartCreditsPlusPlugin.configManager.terminalCommandPrefix.Value;
         string helpCommandKey = StartCreditsPlusPlugin.configManager.terminalCommandHelp.Value;
 

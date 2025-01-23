@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.0] 2025-01-23
+
+### Added
+- Changing Dynamic Start Credits. Now the amount itself can decrease/increase incrementally based on player count.
+
+### Fixed
+- When credits were reset using Terminal, it would not go to the vanilla amount (60) but 0 instead.
+
 ## [1.2.2] 2025-01-20
 
 ### Fixed
